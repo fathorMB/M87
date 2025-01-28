@@ -3,6 +3,7 @@ using M87.SimulatorCore.Engine;
 using M87.SimulatorCore.Models;
 using System;
 using System.Collections.Generic;
+using M87.Contracts;
 
 namespace M87.Tests
 {
@@ -72,7 +73,7 @@ namespace M87.Tests
             // Assert
             Assert.Single(completedCandles);
             var candle = completedCandles[0];
-            Assert.Equal(timestamp1, candle.Timestamp);
+            Assert.Equal(timestamp1, UnixTimeStampToDateTime(candle.Time));
             Assert.Equal(100.0, candle.Open);
             Assert.Equal(100.0, candle.High);
             Assert.Equal(100.0, candle.Low);
@@ -105,7 +106,7 @@ namespace M87.Tests
             // Assert
             Assert.Single(completedCandles);
             var candle = completedCandles[0];
-            Assert.Equal(timestamp1, candle.Timestamp);
+            Assert.Equal(timestamp1, UnixTimeStampToDateTime(candle.Time));
             Assert.Equal(100.0, candle.Open);
             Assert.Equal(102.0, candle.High);
             Assert.Equal(100.0, candle.Low);
@@ -134,7 +135,7 @@ namespace M87.Tests
 
             // First candle
             var candle1 = completedCandles[0];
-            Assert.Equal(new DateTime(2025, 1, 1, 9, 30, 0), candle1.Timestamp);
+            Assert.Equal(new DateTime(2025, 1, 1, 9, 30, 0), UnixTimeStampToDateTime(candle1.Time));
             Assert.Equal(100.0, candle1.Open);
             Assert.Equal(100.0, candle1.High);
             Assert.Equal(100.0, candle1.Low);
@@ -142,7 +143,7 @@ namespace M87.Tests
 
             // Second candle
             var candle2 = completedCandles[1];
-            Assert.Equal(new DateTime(2025, 1, 1, 9, 31, 0), candle2.Timestamp);
+            Assert.Equal(new DateTime(2025, 1, 1, 9, 31, 0), UnixTimeStampToDateTime(candle2.Time));
             Assert.Equal(101.0, candle2.Open);
             Assert.Equal(101.0, candle2.High);
             Assert.Equal(101.0, candle2.Low);
@@ -179,11 +180,19 @@ namespace M87.Tests
             // Assert
             Assert.Single(completedCandles);
             var candle = completedCandles[0];
-            Assert.Equal(timestamp1, candle.Timestamp);
+            Assert.Equal(timestamp1, UnixTimeStampToDateTime(candle.Time));
             Assert.Equal(100.0, candle.Open);
             Assert.Equal(102.0, candle.High);
             Assert.Equal(100.0, candle.Low);
             Assert.Equal(101.0, candle.Close);
+        }
+
+        public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
+        {
+            // Unix timestamp is seconds past epoch
+            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            dateTime = dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
+            return dateTime;
         }
     }
 }

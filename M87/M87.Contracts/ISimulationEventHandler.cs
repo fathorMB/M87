@@ -9,5 +9,6 @@ namespace M87.Contracts
     public interface ISimulationEventHandler
     {
         Task OnPriceUpdateAsync(PriceUpdate priceUpdate);
+        Task OnCandleUpdateAsync(CandleUpdate candleUpdate);
     }
 }

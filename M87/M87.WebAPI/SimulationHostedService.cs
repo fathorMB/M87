@@ -2,6 +2,10 @@
 using M87.SimulatorCore.Engine;
 using M87.SimulatorCore.Models;
 using M87.SimulatorCore.Simulation;
+using Microsoft.Extensions.Hosting;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 public class SimulationHostedService : IHostedService
 {
@@ -12,14 +16,12 @@ public class SimulationHostedService : IHostedService
     {
         _logger = logger;
         // Configura la simulazione e il gestore degli eventi
-        // Assicurati che MarketSessionManager riceva gli handler corretti
         _marketSessionManager = new MarketSessionManager(
             new M87.SimulatorCore.Engine.TimeProvider(DateTime.UtcNow, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1)),
             new List<Stock>
             {
                 new Stock("AAPL", 150.0, new GeometricBrownianMotionSimulator(0.0001, 0.01), new Logger(_logger))
             },
-            TimeSpan.FromMinutes(1),
             new Logger(_logger),
             new List<ISimulationEventHandler> { simulationEventHandler }
         );

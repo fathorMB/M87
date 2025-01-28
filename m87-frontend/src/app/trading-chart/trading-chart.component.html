@@ -1,2 +1,13 @@
-<!-- trading-chart.component.html -->
-<div #chartContainer id="chartContainer" style="width: 100%; height: 100%;"></div>
+<!-- File: m87-frontend/src/app/trading-chart/trading-chart.component.html -->
+
+<div class="chart-controls">
+    <label for="timeframe-select">Timeframe:</label>
+    <select id="timeframe-select" [(ngModel)]="selectedTimeframe" (change)="onTimeframeChange(selectedTimeframe)">
+      <option *ngFor="let timeframe of availableTimeframes" [value]="timeframe">{{ formatTimeframe(timeframe) }}</option>
+    </select>
+    <!-- Bottone di Debug -->
+    <button (click)="logData()">Log Data</button>
+  </div>
+  
+  <div #chartContainer id="chartContainer" style="width: 100%; height: calc(100vh - 60px);"></div>
+  

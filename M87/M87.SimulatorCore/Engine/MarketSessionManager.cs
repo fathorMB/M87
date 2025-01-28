@@ -1,12 +1,9 @@
 ﻿using M87.Contracts;
 using M87.SimulatorCore.Interfaces;
 using M87.SimulatorCore.Models;
-using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace M87.SimulatorCore.Engine
 {
@@ -14,21 +11,38 @@ namespace M87.SimulatorCore.Engine
     {
         private readonly TimeProvider _timeProvider;
         private readonly List<Stock> _stocks;
-        private readonly DataAggregator _dataAggregator;
-        private readonly ILogger _logger;
+        private readonly Interfaces.ILogger _logger;
         private readonly IEnumerable<ISimulationEventHandler> _eventHandlers;
+        private readonly Dictionary<string, DataAggregator> _dataAggregators; // Chiave: timeframe
 
-        public MarketSessionManager(TimeProvider timeProvider, List<Stock> stocks, TimeSpan candleInterval, ILogger logger, IEnumerable<ISimulationEventHandler> eventHandlers)
+        private readonly List<TimeSpan> _timeframes = new List<TimeSpan>
+        {
+            TimeSpan.Zero, // 1 tick
+            TimeSpan.FromMinutes(1),
+            TimeSpan.FromMinutes(5),
+            TimeSpan.FromMinutes(15),
+            TimeSpan.FromMinutes(30),
+            TimeSpan.FromMinutes(60)
+        };
+
+        public MarketSessionManager(TimeProvider timeProvider, List<Stock> stocks, Interfaces.ILogger logger, IEnumerable<ISimulationEventHandler> eventHandlers)
         {
             _timeProvider = timeProvider;
             _stocks = stocks;
-            _dataAggregator = new DataAggregator(candleInterval);
             _logger = logger;
+            _eventHandlers = eventHandlers;
+
+            _dataAggregators = new Dictionary<string, DataAggregator>();
+
+            // Inizializzazione dei DataAggregators per ogni timeframe
+            foreach (var timeframe in _timeframes)
+            {
+                string key = GetTimeframeKey(timeframe);
+                _dataAggregators[key] = new DataAggregator(timeframe);
+                _dataAggregators[key].OnCandleCompleted += (candle) => HandleCandleCompleted(candle, key);
+            }
 
             _timeProvider.OnTick += OnTick;
-
-            // Sottoscrizione agli eventi di candela completata
-            _dataAggregator.OnCandleCompleted += HandleCandleCompleted;
 
             // Sottoscrizione agli eventi di matching per aggiornare i prezzi
             foreach (var stock in _stocks)
@@ -37,7 +51,8 @@ namespace M87.SimulatorCore.Engine
                 {
                     // Aggiornare il prezzo corrente dello stock
                     stock.UpdatePrice(ask.Price);
-                    _dataAggregator.AddPrice(_timeProvider.CurrentTime, ask.Price);
+                    // Aggiungere il prezzo al DataAggregator del timeframe "tick"
+                    _dataAggregators["tick"].AddPrice(_timeProvider.CurrentTime, ask.Price);
 
                     // Creare l'oggetto PriceUpdate
                     var priceUpdate = new PriceUpdate
@@ -54,8 +69,6 @@ namespace M87.SimulatorCore.Engine
                     }
                 };
             }
-
-            _eventHandlers = eventHandlers;
         }
 
         public void StartSession()
@@ -72,7 +85,7 @@ namespace M87.SimulatorCore.Engine
 
         private void OnTick(DateTime currentTime)
         {
-            // Simula l'aggiornamento dei prezzi
+            // Simulazione degli aggiornamenti dei prezzi
             foreach (var stock in _stocks)
             {
                 double oldPrice = stock.CurrentPrice;
@@ -84,20 +97,59 @@ namespace M87.SimulatorCore.Engine
                 {
                     StockSymbol = stock.Symbol,
                     Price = newPrice,
-                    Timestamp = currentTime
+                    Timestamp = _timeProvider.CurrentTime
                 };
 
                 foreach (var handler in _eventHandlers)
                 {
                     handler.OnPriceUpdateAsync(priceUpdate).Wait();
                 }
+
+                // Aggiungere il prezzo a ciascun DataAggregator tranne "tick"
+                foreach (var timeframe in _timeframes)
+                {
+                    if (timeframe == TimeSpan.Zero)
+                        continue; // Saltare "tick", già gestito
+
+                    string key = GetTimeframeKey(timeframe);
+                    _dataAggregators[key].AddPrice(currentTime, newPrice);
+                }
             }
         }
 
-        private void HandleCandleCompleted(Candle candle)
+        private void HandleCandleCompleted(Candle candle, string timeframe)
         {
-            // Gestisci la candela completata, ad esempio, salvarla o inviarla a un grafico
-            _logger.Log($"Candela completata per {candle.Timestamp}: O={candle.Open}, H={candle.High}, L={candle.Low}, C={candle.Close}");
+            _logger.Log($"Candela completata per timeframe {timeframe}: O={candle.Open}, H={candle.High}, L={candle.Low}, C={candle.Close}, T={candle.Time}");
+
+            var candleUpdate = new CandleUpdate
+            {
+                StockSymbol = "AAPL", // Assumendo un solo stock; modificare se necessario
+                Timeframe = timeframe,
+                Candle = candle
+            };
+
+            foreach (var handler in _eventHandlers)
+            {
+                handler.OnCandleUpdateAsync(candleUpdate).Wait();
+            }
+        }
+
+        private string GetTimeframeKey(TimeSpan timeframe)
+        {
+            if (timeframe == TimeSpan.Zero)
+                return "tick";
+            else if (timeframe == TimeSpan.FromMinutes(1))
+                return "1m";
+            else if (timeframe == TimeSpan.FromMinutes(5))
+                return "5m";
+            else if (timeframe == TimeSpan.FromMinutes(15))
+                return "15m";
+            else if (timeframe == TimeSpan.FromMinutes(30))
+                return "30m";
+            else if (timeframe == TimeSpan.FromMinutes(60))
+                return "60m";
+            else
+                throw new ArgumentException("Unsupported timeframe");
         }
     }
 }
