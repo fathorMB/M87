@@ -1,4 +1,5 @@
 ﻿using M87.SimulatorCore.Comparers;
+using M87.SimulatorCore.Interfaces;
 using M87.SimulatorCore.Models;
 using System;
 using System.Collections;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace M87.SimulatorCore.Engine
 {
-    public class OrderBook
+    public class OrderBook : IOrderBook
     {
         public string StockSymbol { get; private set; }
 

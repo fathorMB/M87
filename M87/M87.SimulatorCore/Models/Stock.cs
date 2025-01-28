@@ -16,7 +16,7 @@ namespace M87.SimulatorCore.Models
         public OrderBook OrderBook { get; private set; }
         public OrderManager OrderManager { get; set; }
 
-        public Stock(string symbol, double initialPrice, IPriceSimulator priceSimulator, Logger logger)
+        public Stock(string symbol, double initialPrice, IPriceSimulator priceSimulator, ILogger logger)
         {
             Symbol = symbol;
             CurrentPrice = initialPrice;

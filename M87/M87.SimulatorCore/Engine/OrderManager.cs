@@ -1,4 +1,5 @@
-﻿using M87.SimulatorCore.Models;
+﻿using M87.SimulatorCore.Interfaces;
+using M87.SimulatorCore.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +10,10 @@ namespace M87.SimulatorCore.Engine
 {
     public class OrderManager
     {
-        private OrderBook _orderBook;
-        private Logger _logger;
+        private IOrderBook _orderBook;
+        private ILogger _logger;
 
-        public OrderManager(OrderBook orderBook, Logger logger)
+        public OrderManager(IOrderBook orderBook, ILogger logger)
         {
             _orderBook = orderBook;
             _logger = logger;

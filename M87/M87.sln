@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M87.SimulatorCore", "M87.Si
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M87.QuickSim", "M87.QuickSim\M87.QuickSim.csproj", "{DDD57857-3A94-469F-9A39-34D60B254F85}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M87.Tests", "M87.Tests\M87.Tests.csproj", "{CFAAA867-B04D-4C39-924C-9904FC980D9B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{DDD57857-3A94-469F-9A39-34D60B254F85}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DDD57857-3A94-469F-9A39-34D60B254F85}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DDD57857-3A94-469F-9A39-34D60B254F85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFAAA867-B04D-4C39-924C-9904FC980D9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFAAA867-B04D-4C39-924C-9904FC980D9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFAAA867-B04D-4C39-924C-9904FC980D9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFAAA867-B04D-4C39-924C-9904FC980D9B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
