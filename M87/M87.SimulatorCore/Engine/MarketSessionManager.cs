@@ -75,12 +75,23 @@ namespace M87.SimulatorCore.Engine
             // Simula l'aggiornamento dei prezzi
             foreach (var stock in _stocks)
             {
-                double newPrice = stock.PriceSimulator.SimulateNextPrice(stock.CurrentPrice, _timeProvider.DeltaTime.TotalDays);
+                double oldPrice = stock.CurrentPrice;
+                double newPrice = stock.PriceSimulator.SimulateNextPrice(oldPrice, _timeProvider.DeltaTime.TotalSeconds);
                 stock.UpdatePrice(newPrice);
-                _dataAggregator.AddPrice(currentTime, newPrice);
-            }
+                _logger.Log($"Prezzo {stock.Symbol} aggiornato da {oldPrice} a {newPrice}.");
 
-            _logger.Log($"Simulazione tick: {currentTime}");
+                var priceUpdate = new PriceUpdate
+                {
+                    StockSymbol = stock.Symbol,
+                    Price = newPrice,
+                    Timestamp = currentTime
+                };
+
+                foreach (var handler in _eventHandlers)
+                {
+                    handler.OnPriceUpdateAsync(priceUpdate).Wait();
+                }
+            }
         }
 
         private void HandleCandleCompleted(Candle candle)

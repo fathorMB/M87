@@ -2,21 +2,20 @@
 using M87.WebAPI.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
-namespace M87.WebAPI
+public class SimulationEventHandler : ISimulationEventHandler
 {
-    public class SimulationEventHandler : ISimulationEventHandler
+    private readonly IHubContext<PriceHub> _hubContext;
+    private readonly ILogger<SimulationEventHandler> _logger;
+
+    public SimulationEventHandler(IHubContext<PriceHub> hubContext, ILogger<SimulationEventHandler> logger)
     {
-        private readonly IHubContext<PriceHub> _hubContext;
+        _hubContext = hubContext;
+        _logger = logger;
+    }
 
-        public SimulationEventHandler(IHubContext<PriceHub> hubContext)
-        {
-            _hubContext = hubContext;
-        }
-
-        public async Task OnPriceUpdateAsync(PriceUpdate priceUpdate)
-        {
-            // Invia l'aggiornamento tramite SignalR a tutti i client connessi
-            await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", priceUpdate.StockSymbol, priceUpdate.Price, priceUpdate.Timestamp);
-        }
+    public async Task OnPriceUpdateAsync(PriceUpdate priceUpdate)
+    {
+        _logger.LogInformation($"Invio aggiornamento prezzo: {priceUpdate.StockSymbol} - {priceUpdate.Price} - {priceUpdate.Timestamp}");
+        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", priceUpdate.StockSymbol, priceUpdate.Price, priceUpdate.Timestamp);
     }
 }

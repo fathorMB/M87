@@ -1,7 +1,6 @@
 
 using M87.Contracts;
 using M87.WebAPI.Hubs;
-using M87.WebAPI.Services;
 
 namespace M87.WebAPI
 {

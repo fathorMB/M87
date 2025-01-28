@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { Subject } from 'rxjs';
+import { environment } from '../../environment';
 
 export interface PriceUpdate {
   stockSymbol: string;
@@ -19,7 +20,7 @@ export class SignalRService {
 
   public startConnection(): void {
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl('http://localhost:5000/hubs/price') // Assicurati che l'URL corrisponda al tuo server SignalR
+      .withUrl(environment.signalRUrl) // Assicurati che l'URL corrisponda al tuo server SignalR
       .configureLogging(LogLevel.Information)
       .build();
 

@@ -1,4 +1,5 @@
-// src/app/trading-chart/trading-chart.component.ts
+// trading-chart.component.ts
+
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { createChart, IChartApi, ISeriesApi, Time } from 'lightweight-charts';
 import { SignalRService, PriceUpdate } from '../services/signalr.service';
@@ -21,52 +22,77 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private signalRService: SignalRService) { }
 
   ngOnInit(): void {
-    // Inizializza la connessione SignalR tramite il servizio
+    // Initialize SignalR connection
     this.signalRService.startConnection();
 
-    // Sottoscrivi agli aggiornamenti di prezzo
+    // Subscribe to price updates
     this.priceUpdateSubscription = this.signalRService.priceUpdates$.subscribe((update: PriceUpdate) => {
-      console.log(`Ricevuto aggiornamento: ${update.stockSymbol} - ${update.price} - ${update.timestamp}`);
-      const time = new Date(update.timestamp).getTime() / 1000; // TradingView utilizza timestamp in secondi
+      console.log(`Received Price Update: ${update.stockSymbol} - ${update.price} - ${update.timestamp}`);
+      const time = Math.floor(new Date(update.timestamp).getTime() / 1000); // Convert to Unix timestamp in seconds
 
-      // Verifica se esiste già una candela per questo timestamp
+      // Find if a candle already exists for this timestamp
       const existingCandleIndex = this.data.findIndex(candle => candle.time === time);
       if (existingCandleIndex !== -1) {
-        // Aggiorna la candela esistente
+        // Update existing candle
         const existingCandle = this.data[existingCandleIndex];
         existingCandle.close = update.price;
         existingCandle.high = Math.max(existingCandle.high, update.price);
         existingCandle.low = Math.min(existingCandle.low, update.price);
+        console.log(`Updated Candle at ${time}:`, existingCandle);
       } else {
-        // Crea una nuova candela
-        this.data.push({
+        // Add new candle
+        const newCandle = {
           time: time as Time,
           open: update.price,
           high: update.price,
           low: update.price,
           close: update.price
-        });
+        };
+        this.data.push(newCandle);
+        console.log(`Added New Candle:`, newCandle);
       }
 
-      // Aggiorna il grafico
+      // Update the chart with the new data
       this.candleSeries.setData(this.data);
     });
   }
 
   ngAfterViewInit(): void {
-    // Inizializza il grafico dopo che il view è stato inizializzato
+    // Initialize the chart after the view has been initialized
     this.chart = createChart(this.chartContainer.nativeElement, {
       width: this.chartContainer.nativeElement.clientWidth,
-      height: 300 // Puoi rendere questa dinamica se necessario
+      height: 300, // You can make this dynamic if needed
+      layout: {
+        //backgroundColor: '#ffffff',
+        textColor: '#000000',
+      },
+      grid: {
+        vertLines: {
+          color: '#e1e1e1',
+        },
+        horzLines: {
+          color: '#e1e1e1',
+        },
+      },
     });
     this.candleSeries = this.chart.addCandlestickSeries();
 
-    // Adatta il grafico alle dimensioni del contenitore
+    // Optionally, set initial data or styling
+    this.candleSeries.applyOptions({
+      upColor: '#4CAF50',
+      downColor: '#F44336',
+      borderDownColor: '#F44336',
+      borderUpColor: '#4CAF50',
+      wickDownColor: '#F44336',
+      wickUpColor: '#4CAF50',
+    });
+
+    // Ensure the chart resizes with the window
     window.addEventListener('resize', this.resizeChart.bind(this));
   }
 
   ngOnDestroy(): void {
-    // Disconnetti SignalR e annulla la sottoscrizione
+    // Clean up subscriptions and connections
     this.signalRService.stopConnection();
     if (this.priceUpdateSubscription) {
       this.priceUpdateSubscription.unsubscribe();
