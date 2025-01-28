@@ -3,6 +3,8 @@ using M87.SimulatorCore.Engine;
 using M87.SimulatorCore.Models;
 using System;
 using System.Linq;
+using Moq;
+using M87.SimulatorCore.Interfaces;
 
 namespace M87.Tests
 {
@@ -147,92 +149,72 @@ namespace M87.Tests
         public void AddOrder_ShouldPartialMatch_WhenBidQuantityLessThanAsk()
         {
             // Arrange
+            var mockLogger = new Mock<ILogger>();
             var orderBook = new OrderBook("AAPL");
+            var orderManager = new OrderManager(orderBook, mockLogger.Object);
+
             var bid = new Order
             {
-                StockSymbol = "AAPL",
-                Type = OrderType.Limit,
-                Side = OrderSide.Buy,
                 Price = 150.0,
-                Quantity = 50,
-                ClientId = "Client1"
-            };
-            var ask = new Order
-            {
-                StockSymbol = "AAPL",
-                Type = OrderType.Limit,
-                Side = OrderSide.Sell,
-                Price = 149.5,
-                Quantity = 100,
-                ClientId = "Client2"
+                Quantity = 50, // Bid Quantity inferiore
+                Side = OrderSide.Buy,
+                StockSymbol = "AAPL"
             };
 
-            Order matchedBid = null;
-            Order matchedAsk = null;
-            orderBook.OnOrderMatched += (b, a) =>
+            var ask = new Order
             {
-                matchedBid = b;
-                matchedAsk = a;
+                Price = 149.5,
+                Quantity = 100, // Ask Quantity maggiore
+                Side = OrderSide.Sell,
+                StockSymbol = "AAPL"
             };
 
             // Act
-            orderBook.AddOrder(bid);
-            orderBook.AddOrder(ask);
+            orderManager.SubmitOrder(bid);
+            orderManager.SubmitOrder(ask);
 
             // Assert
-            Assert.Empty(orderBook.Bids);
-            Assert.Single(orderBook.Asks);
-            Assert.Equal(50, orderBook.Asks.First().Quantity);
-            Assert.NotNull(matchedBid);
-            Assert.NotNull(matchedAsk);
-            Assert.Equal(50, matchedBid.Quantity);
-            Assert.Equal(100, matchedAsk.Quantity); // Quantity before matching
+            Assert.Empty(orderBook.Bids); // Il bid è completamente esaurito
+            Assert.Single(orderBook.Asks); // Rimane un ask residuo
+            var remainingAsk = orderBook.Asks.First();
+            Assert.Equal(50, remainingAsk.Quantity); // Residuo dell'ask
+            mockLogger.Verify(logger => logger.Log(It.Is<string>(s => s.Contains("Ordine eseguito"))), Times.Once);
         }
 
         [Fact]
-        public void AddOrder_ShouldPartialMatch_WhenAskQuantityLessThanBid()
+        public void MatchOrders_ShouldHandlePartialMatches_WhenAskQuantityLessThanBid()
         {
             // Arrange
+            var mockLogger = new Mock<ILogger>();
             var orderBook = new OrderBook("AAPL");
+            var orderManager = new OrderManager(orderBook, mockLogger.Object);
+
             var bid = new Order
             {
-                StockSymbol = "AAPL",
-                Type = OrderType.Limit,
-                Side = OrderSide.Buy,
                 Price = 150.0,
-                Quantity = 100,
-                ClientId = "Client1"
-            };
-            var ask = new Order
-            {
-                StockSymbol = "AAPL",
-                Type = OrderType.Limit,
-                Side = OrderSide.Sell,
-                Price = 149.5,
-                Quantity = 50,
-                ClientId = "Client2"
+                Quantity = 100, // Bid Quantity maggiore
+                Side = OrderSide.Buy,
+                StockSymbol = "AAPL"
             };
 
-            Order matchedBid = null;
-            Order matchedAsk = null;
-            orderBook.OnOrderMatched += (b, a) =>
+            var ask = new Order
             {
-                matchedBid = b;
-                matchedAsk = a;
+                Price = 149.5,
+                Quantity = 50, // Ask Quantity minore
+                Side = OrderSide.Sell,
+                StockSymbol = "AAPL"
             };
 
             // Act
-            orderBook.AddOrder(bid);
-            orderBook.AddOrder(ask);
+            orderManager.SubmitOrder(bid);
+            orderManager.SubmitOrder(ask);
 
             // Assert
             Assert.Single(orderBook.Bids);
-            Assert.Empty(orderBook.Asks);
-            Assert.Equal(50, orderBook.Bids.First().Quantity);
-            Assert.NotNull(matchedBid);
-            Assert.NotNull(matchedAsk);
-            Assert.Equal(100, matchedBid.Quantity); // Quantity before matching
-            Assert.Equal(50, matchedAsk.Quantity);
+            var remainingBid = orderBook.Bids.First();
+            Assert.Equal(50, remainingBid.Quantity); // Bid residuo
+            Assert.Empty(orderBook.Asks); // Ask completamente esaurito
+            mockLogger.Verify(logger => logger.Log(It.Is<string>(s => s.Contains("Ordine eseguito"))), Times.Once);
         }
 
         [Fact]
