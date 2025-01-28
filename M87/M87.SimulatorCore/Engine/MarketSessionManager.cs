@@ -1,4 +1,7 @@
-﻿using M87.SimulatorCore.Models;
+﻿using M87.Contracts;
+using M87.SimulatorCore.Interfaces;
+using M87.SimulatorCore.Models;
+using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,12 +12,13 @@ namespace M87.SimulatorCore.Engine
 {
     public class MarketSessionManager
     {
-        private TimeProvider _timeProvider;
-        private List<Stock> _stocks;
-        private DataAggregator _dataAggregator;
-        private Logger _logger;
+        private readonly TimeProvider _timeProvider;
+        private readonly List<Stock> _stocks;
+        private readonly DataAggregator _dataAggregator;
+        private readonly ILogger _logger;
+        private readonly IEnumerable<ISimulationEventHandler> _eventHandlers;
 
-        public MarketSessionManager(TimeProvider timeProvider, List<Stock> stocks, TimeSpan candleInterval, Logger logger)
+        public MarketSessionManager(TimeProvider timeProvider, List<Stock> stocks, TimeSpan candleInterval, ILogger logger, IEnumerable<ISimulationEventHandler> eventHandlers)
         {
             _timeProvider = timeProvider;
             _stocks = stocks;
@@ -33,9 +37,25 @@ namespace M87.SimulatorCore.Engine
                 {
                     // Aggiornare il prezzo corrente dello stock
                     stock.UpdatePrice(ask.Price);
-                    _dataAggregator.AddPrice(_timeProvider.CurrentTime, ask.Price); // Assicurati di avere il timestamp corretto
+                    _dataAggregator.AddPrice(_timeProvider.CurrentTime, ask.Price);
+
+                    // Creare l'oggetto PriceUpdate
+                    var priceUpdate = new PriceUpdate
+                    {
+                        StockSymbol = stock.Symbol,
+                        Price = ask.Price,
+                        Timestamp = _timeProvider.CurrentTime
+                    };
+
+                    // Inviare l'aggiornamento agli handler
+                    foreach (var handler in _eventHandlers)
+                    {
+                        handler.OnPriceUpdateAsync(priceUpdate);
+                    }
                 };
             }
+
+            _eventHandlers = eventHandlers;
         }
 
         public void StartSession()
@@ -52,12 +72,15 @@ namespace M87.SimulatorCore.Engine
 
         private void OnTick(DateTime currentTime)
         {
+            // Simula l'aggiornamento dei prezzi
             foreach (var stock in _stocks)
             {
                 double newPrice = stock.PriceSimulator.SimulateNextPrice(stock.CurrentPrice, _timeProvider.DeltaTime.TotalDays);
                 stock.UpdatePrice(newPrice);
                 _dataAggregator.AddPrice(currentTime, newPrice);
             }
+
+            _logger.Log($"Simulazione tick: {currentTime}");
         }
 
         private void HandleCandleCompleted(Candle candle)

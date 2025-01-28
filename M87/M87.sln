@@ -5,9 +5,11 @@ VisualStudioVersion = 17.13.35617.110 d17.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M87.SimulatorCore", "M87.SimulatorCore\M87.SimulatorCore.csproj", "{817DF82D-34AD-4051-A1B3-9467C596E6BB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M87.QuickSim", "M87.QuickSim\M87.QuickSim.csproj", "{DDD57857-3A94-469F-9A39-34D60B254F85}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M87.Tests", "M87.Tests\M87.Tests.csproj", "{CFAAA867-B04D-4C39-924C-9904FC980D9B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M87.WebAPI", "M87.WebAPI\M87.WebAPI.csproj", "{0E3E5954-0ABB-4DC8-B86C-FC1878C6D6CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M87.Contracts", "M87.Contracts\M87.Contracts.csproj", "{27D6ACB8-89F2-42A1-8308-20EBF7DC52D9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +21,18 @@ Global
 		{817DF82D-34AD-4051-A1B3-9467C596E6BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{817DF82D-34AD-4051-A1B3-9467C596E6BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{817DF82D-34AD-4051-A1B3-9467C596E6BB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DDD57857-3A94-469F-9A39-34D60B254F85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DDD57857-3A94-469F-9A39-34D60B254F85}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DDD57857-3A94-469F-9A39-34D60B254F85}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DDD57857-3A94-469F-9A39-34D60B254F85}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CFAAA867-B04D-4C39-924C-9904FC980D9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CFAAA867-B04D-4C39-924C-9904FC980D9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CFAAA867-B04D-4C39-924C-9904FC980D9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CFAAA867-B04D-4C39-924C-9904FC980D9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E3E5954-0ABB-4DC8-B86C-FC1878C6D6CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E3E5954-0ABB-4DC8-B86C-FC1878C6D6CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E3E5954-0ABB-4DC8-B86C-FC1878C6D6CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E3E5954-0ABB-4DC8-B86C-FC1878C6D6CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27D6ACB8-89F2-42A1-8308-20EBF7DC52D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27D6ACB8-89F2-42A1-8308-20EBF7DC52D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27D6ACB8-89F2-42A1-8308-20EBF7DC52D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27D6ACB8-89F2-42A1-8308-20EBF7DC52D9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
