@@ -1,13 +1,25 @@
-<!-- File: m87-frontend/src/app/trading-chart/trading-chart.component.html -->
+<!-- File: trading-chart.component.html -->
 
-<div class="chart-controls">
+<div class="chart-container">
+  <!-- ✅ Timeframe Selector -->
+  <div class="chart-controls">
     <label for="timeframe-select">Timeframe:</label>
     <select id="timeframe-select" [(ngModel)]="selectedTimeframe" (change)="onTimeframeChange(selectedTimeframe)">
-      <option *ngFor="let timeframe of availableTimeframes" [value]="timeframe">{{ formatTimeframe(timeframe) }}</option>
+      <option *ngFor="let timeframe of availableTimeframes" [value]="timeframe">
+        {{ formatTimeframe(timeframe) }}
+      </option>
     </select>
-    <!-- Bottone di Debug -->
-    <button (click)="logData()">Log Data</button>
+    <button class="refresh-btn" (click)="onTimeframeChange(selectedTimeframe)">Refresh</button>
   </div>
-  
-  <div #chartContainer id="chartContainer" style="width: 100%; height: calc(100vh - 60px);"></div>
-  
+
+  <!-- ✅ Chart Display -->
+  <div #chartContainer id="chartContainer"></div>
+
+  <!-- ✅ Debugging Panel (Optional, Can Be Removed) -->
+  <div class="debug-panel">
+    <h4>Debugging Info</h4>
+    <p>Selected Timeframe: {{ selectedTimeframe }}</p>
+    <p>Last Candle Time: {{ candleBuffer?.time || 'N/A' }}</p>
+    <p>Open: {{ candleBuffer?.open || '-' }} | High: {{ candleBuffer?.high || '-' }} | Low: {{ candleBuffer?.low || '-' }} | Close: {{ candleBuffer?.close || '-' }}</p>
+  </div>
+</div>

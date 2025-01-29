@@ -1,32 +1,63 @@
-/* File: m87-frontend/src/app/trading-chart/trading-chart.component.scss */
+/* File: trading-chart.component.scss */
 
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+}
+
+.chart-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9f9f9;
 }
 
 .chart-controls {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 10px;
-  background-color: #f5f5f5;
+  background-color: #e3e3e3;
+  border-bottom: 1px solid #ccc;
 }
 
 .chart-controls label {
+  font-weight: bold;
   margin-right: 10px;
 }
 
 .chart-controls select {
-  margin-right: 20px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  background-color: white;
 }
 
-.chart-controls button {
+.refresh-btn {
   padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
   cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.refresh-btn:hover {
+  background-color: #0056b3;
 }
 
 #chartContainer {
+  flex-grow: 1;
   width: 100%;
-  height: calc(100vh - 60px); // Regola l'altezza in base ai controlli
+  height: calc(100vh - 100px);
+}
+
+.debug-panel {
+  background: #f0f0f0;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+  font-size: 14px;
 }
