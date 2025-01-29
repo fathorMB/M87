@@ -1,16 +1,12 @@
 ﻿using M87.Contracts;
-using M87.SimulatorCore.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace M87.SimulatorCore.Engine
 {
     public class DataAggregator
     {
-        private TimeSpan _candleInterval;
+        private readonly TimeSpan _candleInterval;
         private Candle _currentCandle;
         private DateTime _currentCandleStart;
 
@@ -25,7 +21,7 @@ namespace M87.SimulatorCore.Engine
         {
             if (_currentCandle == null)
             {
-                _currentCandleStart = new DateTime(timestamp.Year, timestamp.Month, timestamp.Day, timestamp.Hour, timestamp.Minute, 0);
+                _currentCandleStart = timestamp;
                 _currentCandle = new Candle(_currentCandleStart, price, price, price, price);
                 return;
             }
@@ -38,11 +34,8 @@ namespace M87.SimulatorCore.Engine
             }
             else
             {
-                // Emissione della candela completata
                 OnCandleCompleted?.Invoke(_currentCandle);
-
-                // Inizializzazione della nuova candela
-                _currentCandleStart = _currentCandleStart.Add(_candleInterval);
+                _currentCandleStart = timestamp;
                 _currentCandle = new Candle(_currentCandleStart, price, price, price, price);
             }
         }

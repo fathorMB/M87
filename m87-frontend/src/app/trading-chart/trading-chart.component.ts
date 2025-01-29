@@ -23,7 +23,7 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
   private candleUpdateSubscription!: Subscription;
 
   public selectedTimeframe: string = '1m'; // Timeframe predefinito
-  public availableTimeframes: string[] = ['tick', '1m', '5m', '15m', '30m', '60m'];
+  public availableTimeframes: string[] = ['1m', '5m', '15m', '30m', '60m'];
 
   constructor(private signalRService: SignalRService) { }
 

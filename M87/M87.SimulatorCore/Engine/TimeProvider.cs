@@ -8,30 +8,21 @@ namespace M87.SimulatorCore.Engine
         public event Action<DateTime> OnTick;
         private System.Timers.Timer _timer;
         private DateTime _currentTime;
-        private TimeSpan _tickInterval;
-        private TimeSpan _deltaTime;
+        private readonly TimeSpan _tickInterval = TimeSpan.FromSeconds(1); // Fixed 1s tick
+        private readonly TimeSpan _deltaTime = TimeSpan.FromSeconds(1); // Fixed 1s deltaTime
 
         public TimeSpan DeltaTime => _deltaTime;
-        public DateTime CurrentTime => _currentTime; // Aggiunta della proprietà CurrentTime
+        public DateTime CurrentTime => _currentTime;
 
-        public TimeProvider(DateTime startTime, TimeSpan tickInterval, TimeSpan deltaTime)
+        public TimeProvider(DateTime startTime)
         {
             _currentTime = startTime;
-            _tickInterval = tickInterval;
-            _deltaTime = deltaTime;
             _timer = new System.Timers.Timer(_tickInterval.TotalMilliseconds);
             _timer.Elapsed += TimerElapsed;
         }
 
-        public void Start()
-        {
-            _timer.Start();
-        }
-
-        public void Stop()
-        {
-            _timer.Stop();
-        }
+        public void Start() => _timer.Start();
+        public void Stop() => _timer.Stop();
 
         private void TimerElapsed(object sender, ElapsedEventArgs e)
         {

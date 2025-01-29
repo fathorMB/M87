@@ -19,7 +19,7 @@ public class SimulationHostedService : IHostedService
         _logger = logger;
         // Configura la simulazione e il gestore degli eventi
         _marketSessionManager = new MarketSessionManager(
-            new M87.SimulatorCore.Engine.TimeProvider(DateTime.UtcNow, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1)),
+            new M87.SimulatorCore.Engine.TimeProvider(DateTime.UtcNow),
             new List<Stock>
             {
                 new Stock("AAPL", 150.0, new GeometricBrownianMotionSimulator(0.0001, 0.01), new Logger(_logger))

@@ -13,11 +13,11 @@ namespace M87.SimulatorCore.Engine
         private readonly List<Stock> _stocks;
         private readonly Interfaces.ILogger _logger;
         private readonly IEnumerable<ISimulationEventHandler> _eventHandlers;
-        private readonly Dictionary<string, DataAggregator> _dataAggregators; // Chiave: timeframe
+        private readonly Dictionary<string, DataAggregator> _dataAggregators;
 
         private readonly List<TimeSpan> _timeframes = new List<TimeSpan>
         {
-            TimeSpan.Zero, // 1 tick
+            TimeSpan.FromSeconds(1), // Fixed smallest timeframe to 1s
             TimeSpan.FromMinutes(1),
             TimeSpan.FromMinutes(5),
             TimeSpan.FromMinutes(15),
@@ -34,7 +34,6 @@ namespace M87.SimulatorCore.Engine
 
             _dataAggregators = new Dictionary<string, DataAggregator>();
 
-            // Inizializzazione dei DataAggregators per ogni timeframe
             foreach (var timeframe in _timeframes)
             {
                 string key = GetTimeframeKey(timeframe);
@@ -44,17 +43,13 @@ namespace M87.SimulatorCore.Engine
 
             _timeProvider.OnTick += OnTick;
 
-            // Sottoscrizione agli eventi di matching per aggiornare i prezzi
             foreach (var stock in _stocks)
             {
                 stock.OrderBook.OnOrderMatched += (bid, ask) =>
                 {
-                    // Aggiornare il prezzo corrente dello stock
                     stock.UpdatePrice(ask.Price);
-                    // Aggiungere il prezzo al DataAggregator del timeframe "tick"
-                    _dataAggregators["tick"].AddPrice(_timeProvider.CurrentTime, ask.Price);
+                    _dataAggregators["1s"].AddPrice(_timeProvider.CurrentTime, ask.Price);
 
-                    // Creare l'oggetto PriceUpdate
                     var priceUpdate = new PriceUpdate
                     {
                         StockSymbol = stock.Symbol,
@@ -62,7 +57,6 @@ namespace M87.SimulatorCore.Engine
                         Timestamp = _timeProvider.CurrentTime
                     };
 
-                    // Inviare l'aggiornamento agli handler
                     foreach (var handler in _eventHandlers)
                     {
                         handler.OnPriceUpdateAsync(priceUpdate);
@@ -71,27 +65,17 @@ namespace M87.SimulatorCore.Engine
             }
         }
 
-        public void StartSession()
-        {
-            _timeProvider.Start();
-            _logger.Log("Sessione di mercato avviata.");
-        }
-
-        public void StopSession()
-        {
-            _timeProvider.Stop();
-            _logger.Log("Sessione di mercato terminata.");
-        }
+        public void StartSession() => _timeProvider.Start();
+        public void StopSession() => _timeProvider.Stop();
 
         private void OnTick(DateTime currentTime)
         {
-            // Simulazione degli aggiornamenti dei prezzi
             foreach (var stock in _stocks)
             {
-                double oldPrice = stock.CurrentPrice;
-                double newPrice = stock.PriceSimulator.SimulateNextPrice(oldPrice, _timeProvider.DeltaTime.TotalSeconds);
+                double newPrice = stock.PriceSimulator.SimulateNextPrice(stock.CurrentPrice, _timeProvider.DeltaTime.TotalSeconds);
                 stock.UpdatePrice(newPrice);
-                _logger.Log($"Prezzo {stock.Symbol} aggiornato da {oldPrice} a {newPrice}.");
+
+                _logger.Log($"Prezzo {stock.Symbol} aggiornato a {newPrice}.");
 
                 var priceUpdate = new PriceUpdate
                 {
@@ -105,12 +89,8 @@ namespace M87.SimulatorCore.Engine
                     handler.OnPriceUpdateAsync(priceUpdate).Wait();
                 }
 
-                // Aggiungere il prezzo a ciascun DataAggregator tranne "tick"
                 foreach (var timeframe in _timeframes)
                 {
-                    if (timeframe == TimeSpan.Zero)
-                        continue; // Saltare "tick", già gestito
-
                     string key = GetTimeframeKey(timeframe);
                     _dataAggregators[key].AddPrice(currentTime, newPrice);
                 }
@@ -119,11 +99,11 @@ namespace M87.SimulatorCore.Engine
 
         private void HandleCandleCompleted(Candle candle, string timeframe)
         {
-            _logger.Log($"Candela completata per timeframe {timeframe}: O={candle.Open}, H={candle.High}, L={candle.Low}, C={candle.Close}, T={candle.Time}");
+            _logger.Log($"Candela completata {timeframe}: O={candle.Open}, H={candle.High}, L={candle.Low}, C={candle.Close}, T={candle.Time}");
 
             var candleUpdate = new CandleUpdate
             {
-                StockSymbol = "AAPL", // Assumendo un solo stock; modificare se necessario
+                StockSymbol = "AAPL",
                 Timeframe = timeframe,
                 Candle = candle
             };
@@ -136,8 +116,8 @@ namespace M87.SimulatorCore.Engine
 
         private string GetTimeframeKey(TimeSpan timeframe)
         {
-            if (timeframe == TimeSpan.Zero)
-                return "tick";
+            if (timeframe == TimeSpan.FromSeconds(1))
+                return "1s";
             else if (timeframe == TimeSpan.FromMinutes(1))
                 return "1m";
             else if (timeframe == TimeSpan.FromMinutes(5))
