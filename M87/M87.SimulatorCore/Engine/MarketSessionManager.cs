@@ -1,4 +1,6 @@
-﻿using M87.Contracts;
+﻿// File: M87/M87.SimulatorCore/Engine/MarketSessionManager.cs
+
+using M87.Contracts;
 using M87.SimulatorCore.Interfaces;
 using M87.SimulatorCore.Models;
 using System;
@@ -17,7 +19,8 @@ namespace M87.SimulatorCore.Engine
 
         private readonly List<TimeSpan> _timeframes = new List<TimeSpan>
         {
-            TimeSpan.FromSeconds(1), // Fixed smallest timeframe to 1s
+            // Removed the "1s" timeframe to prevent excessive CandleUpdates
+            // Only include fixed timeframes like "1m", "5m", etc.
             TimeSpan.FromMinutes(1),
             TimeSpan.FromMinutes(5),
             TimeSpan.FromMinutes(15),
@@ -48,7 +51,11 @@ namespace M87.SimulatorCore.Engine
                 stock.OrderBook.OnOrderMatched += (bid, ask) =>
                 {
                     stock.UpdatePrice(ask.Price);
-                    _dataAggregators["1s"].AddPrice(_timeProvider.CurrentTime, ask.Price);
+                    foreach (var timeframe in _timeframes)
+                    {
+                        string key = GetTimeframeKey(timeframe);
+                        _dataAggregators[key].AddPrice(_timeProvider.CurrentTime, ask.Price);
+                    }
 
                     var priceUpdate = new PriceUpdate
                     {
@@ -103,7 +110,7 @@ namespace M87.SimulatorCore.Engine
 
             var candleUpdate = new CandleUpdate
             {
-                StockSymbol = "AAPL",
+                StockSymbol = "AAPL", // Consider making this dynamic if handling multiple stocks
                 Timeframe = timeframe,
                 Candle = candle
             };

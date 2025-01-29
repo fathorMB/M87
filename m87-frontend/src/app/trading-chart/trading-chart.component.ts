@@ -21,25 +21,57 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
   private chart!: IChartApi;
   private candleSeriesMap: Map<string, ISeriesApi<'Candlestick'>> = new Map();
   private candleUpdateSubscription!: Subscription;
+  private priceUpdateSubscription!: Subscription;
+  private lastCandleTimeMap: Map<string, Time> = new Map();
 
-  public selectedTimeframe: string = '1m'; // Timeframe predefinito
+  public selectedTimeframe: string = '1m'; // Default timeframe
   public availableTimeframes: string[] = ['1m', '5m', '15m', '30m', '60m'];
+
+  // To store the current candle data for the selected timeframe
+  private currentCandle: Candle | null = null;
 
   constructor(private signalRService: SignalRService) { }
 
   ngOnInit(): void {
-    // Inizializza la connessione SignalR
+    // Initialize SignalR connection
     this.signalRService.startConnection();
 
-    // Sottoscrizione agli aggiornamenti delle candele
+    // Subscribe to CandleUpdates
     this.candleUpdateSubscription = this.signalRService.candleUpdates$.subscribe((update: CandleUpdate) => {
-      console.log(`TradingChartComponent - Ricevuto CandleUpdate: ${update.timeframe} - ${update.candle.time}`);
-      if (update.stockSymbol !== 'AAPL') return; // Modificare se si gestiscono più stock
+      console.log(`TradingChartComponent - Received CandleUpdate: ${update.timeframe} - ${update.candle.time}`);
+
+      if (update.stockSymbol !== 'AAPL') return; // Modify if handling multiple stocks
 
       const timeframe = update.timeframe;
       const candle = update.candle;
 
-      // Verifica se la serie per il timeframe esiste, altrimenti crea una nuova serie
+      // Only process updates for the selected timeframe
+      if (timeframe !== this.selectedTimeframe) return;
+
+      // Finalize and add the completed candle to the chart
+      const series = this.candleSeriesMap.get(timeframe);
+      if (series) {
+        series.update({
+          time: candle.time as Time,
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close
+        });
+        console.log(`TradingChartComponent - Added completed candle for ${timeframe} at ${candle.time}`);
+      }
+    });
+
+    // Subscribe to PriceUpdates to update the current candle in real-time
+    this.priceUpdateSubscription = this.signalRService.priceUpdates$.subscribe((update: PriceUpdate) => {
+      console.log(`TradingChartComponent - Received PriceUpdate: ${update.stockSymbol} - ${update.price} - ${update.timestamp}`);
+
+      if (update.stockSymbol !== 'AAPL') return; // Modify if handling multiple stocks
+
+      const timeframe = this.selectedTimeframe;
+      const price = update.price;
+
+      // Initialize the series if it doesn't exist
       if (!this.candleSeriesMap.has(timeframe)) {
         const series = this.chart.addCandlestickSeries({
           upColor: '#4CAF50',
@@ -50,32 +82,47 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
           wickUpColor: '#4CAF50',
         });
         this.candleSeriesMap.set(timeframe, series);
-        console.log(`TradingChartComponent - Serie aggiunta per timeframe: ${timeframe}`, series);
+        console.log(`TradingChartComponent - Added series for timeframe: ${timeframe}`, series);
       }
 
       const series = this.candleSeriesMap.get(timeframe);
 
-      // Aggiungi la nuova candela al grafico
-      series?.update({
-        time: candle.time as Time, // Cast esplicito a Time
-        open: candle.open,
-        high: candle.high,
-        low: candle.low,
-        close: candle.close
-      });
+      if (!this.currentCandle) {
+        // Create the initial current candle immediately
+        this.currentCandle = {
+          time: Math.floor(new Date(update.timestamp).getTime() / 1000) as Time,
+          open: price,
+          high: price,
+          low: price,
+          close: price
+        };
+        series?.update(this.currentCandle);
+        this.lastCandleTimeMap.set(timeframe, this.currentCandle.time);
+        console.log(`TradingChartComponent - Created initial candle for ${timeframe} at ${this.currentCandle.time}`);
+      } else {
+        // Update the current candle's high, low, and close
+        if (price > this.currentCandle.high) this.currentCandle.high = price;
+        if (price < this.currentCandle.low) this.currentCandle.low = price;
+        this.currentCandle.close = price;
 
-      console.log(`TradingChartComponent - Candela aggiornata per timeframe ${timeframe}:`, candle);
+        series?.update({
+          time: this.currentCandle.time,
+          open: this.currentCandle.open,
+          high: this.currentCandle.high,
+          low: this.currentCandle.low,
+          close: this.currentCandle.close
+        });
 
-      // Opzionale: rimuovi dati vecchi per limitare il numero di candele
-      // Implementa se necessario
+        console.log(`TradingChartComponent - Updated current candle for ${timeframe} at ${this.currentCandle.time}`);
+      }
     });
   }
 
   ngAfterViewInit(): void {
-    // Inizializza il grafico dopo che la vista è stata inizializzata
+    // Initialize the chart after the view is initialized
     this.chart = createChart(this.chartContainer.nativeElement, {
       width: this.chartContainer.nativeElement.clientWidth,
-      height: 300, // Può essere reso dinamico se necessario
+      height: 600, // Adjust height as needed
       layout: {
         textColor: '#000000',
       },
@@ -89,21 +136,20 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
       },
     });
 
-    console.log('TradingChartComponent - Grafico inizializzato:', this.chart);
+    console.log('TradingChartComponent - Chart initialized:', this.chart);
 
-    // Inizializza la serie di candele per il timeframe predefinito
-    // Ora viene gestita dinamicamente al primo aggiornamento
-    // Non è più necessario creare una serie qui
-
-    // Assicurati che il grafico si ridimensiona con la finestra
+    // Ensure the chart resizes with the window
     window.addEventListener('resize', this.resizeChart.bind(this));
   }
 
   ngOnDestroy(): void {
-    // Pulisci le sottoscrizioni e le connessioni
+    // Clean up subscriptions and connections
     this.signalRService.stopConnection();
     if (this.candleUpdateSubscription) {
       this.candleUpdateSubscription.unsubscribe();
+    }
+    if (this.priceUpdateSubscription) {
+      this.priceUpdateSubscription.unsubscribe();
     }
     window.removeEventListener('resize', this.resizeChart.bind(this));
   }
@@ -111,29 +157,31 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
   private resizeChart(): void {
     if (this.chart && this.chartContainer) {
       this.chart.applyOptions({ width: this.chartContainer.nativeElement.clientWidth });
-      console.log('TradingChartComponent - Grafico ridimensionato');
+      console.log('TradingChartComponent - Chart resized');
     }
   }
 
   public onTimeframeChange(newTimeframe: string): void {
-    console.log(`TradingChartComponent - Timeframe cambiato a: ${newTimeframe}`);
+    console.log(`TradingChartComponent - Timeframe changed to: ${newTimeframe}`);
     this.selectedTimeframe = newTimeframe;
 
-    // Nascondi tutte le serie
+    // Hide all series except the selected timeframe
     this.candleSeriesMap.forEach((series, timeframe) => {
-      series.applyOptions({ visible: false });
-      console.log(`TradingChartComponent - Serie nascosta: ${timeframe}`);
+      if (timeframe === newTimeframe) {
+        series.applyOptions({ visible: true });
+        console.log(`TradingChartComponent - Showed series for timeframe: ${timeframe}`);
+      } else {
+        series.applyOptions({ visible: false });
+        console.log(`TradingChartComponent - Hid series for timeframe: ${timeframe}`);
+      }
     });
 
-    // Mostra la serie del timeframe selezionato
-    const selectedSeries = this.candleSeriesMap.get(newTimeframe);
-    if (selectedSeries) {
-      selectedSeries.applyOptions({ visible: true });
-      console.log(`TradingChartComponent - Serie mostrata: ${newTimeframe}`);
-    } else {
-      // Se la serie non esiste ancora, verrà creata quando arriverà il primo CandleUpdate
-      console.log(`TradingChartComponent - Serie non esiste ancora per timeframe: ${newTimeframe}`);
-      // La serie verrà creata al primo aggiornamento
+    // Reset the current candle if changing timeframe
+    const previousTimeframe = Array.from(this.candleSeriesMap.keys()).find(tf => tf !== newTimeframe);
+    if (previousTimeframe) {
+      this.currentCandle = null;
+      this.lastCandleTimeMap.set(newTimeframe, undefined as unknown as Time);
+      console.log(`TradingChartComponent - Reset current candle for timeframe: ${newTimeframe}`);
     }
   }
 
@@ -156,8 +204,8 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // Metodo di debug per loggare i dati
+  // Debug method to log data (currently not implemented)
   public logData(): void {
-    console.log('TradingChartComponent - Attualmente non supportato il log dei dati cumulativi.');
+    console.log('TradingChartComponent - Data logging not implemented.');
   }
 }
