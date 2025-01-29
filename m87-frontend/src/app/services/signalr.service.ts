@@ -9,7 +9,7 @@ import { Candle } from '../models/candle.model';
 export interface PriceUpdate {
   stockSymbol: string;
   price: number;
-  timestamp: string;
+  timestamp: string; // ISO string
 }
 
 export interface CandleUpdate {
@@ -36,27 +36,43 @@ export class SignalRService {
 
     this.hubConnection.start()
       .then(() => {
-        console.log('Connessione SignalR avviata');
-        // Opzionale: Invia un messaggio al backend per confermare la connessione
+        console.log('SignalR connection started');
+        // Optionally, notify the backend to start sending data
       })
-      .catch(err => console.error('Errore di connessione SignalR: ', err));
+      .catch(err => console.error('Error while starting SignalR connection: ', err));
 
+    // Listen for PriceUpdates
     this.hubConnection.on('ReceivePriceUpdate', (stockSymbol: string, price: number, timestamp: string) => {
-      console.log(`Ricevuto PriceUpdate: ${stockSymbol} - ${price} - ${timestamp}`);
+      console.log(`Received PriceUpdate: ${stockSymbol} - ${price} - ${timestamp}`);
       this.priceUpdates$.next({ stockSymbol, price, timestamp });
     });
 
-    this.hubConnection.on('ReceiveCandleUpdate', (stockSymbol: string, timeframe: string, candle: Candle) => {
-      console.log(`Ricevuto CandleUpdate: ${stockSymbol} - ${timeframe} - ${candle.time}`);
-      this.candleUpdates$.next({ stockSymbol, timeframe, candle });
+    // Listen for CandleUpdates
+    this.hubConnection.on('ReceiveCandleUpdate', (stockSymbol: string, timeframe: string, candle: any) => {
+      // Ensure that candle.time is a number
+      if (typeof candle.time !== 'number') {
+        console.error('Received Candle with invalid time:', candle.time);
+        return;
+      }
+
+      const validatedCandle: Candle = {
+        time: candle.time,
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close
+      };
+
+      console.log(`Received CandleUpdate: ${stockSymbol} - ${timeframe} - ${validatedCandle.time}`);
+      this.candleUpdates$.next({ stockSymbol, timeframe, candle: validatedCandle });
     });
   }
 
   public stopConnection(): void {
     if (this.hubConnection) {
       this.hubConnection.stop()
-        .then(() => console.log('Connessione SignalR terminata'))
-        .catch(err => console.error('Errore durante la disconnessione SignalR: ', err));
+        .then(() => console.log('SignalR connection stopped'))
+        .catch(err => console.error('Error while stopping SignalR connection: ', err));
     }
   }
 }

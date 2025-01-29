@@ -22,7 +22,7 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
   private candleSeriesMap: Map<string, ISeriesApi<'Candlestick'>> = new Map();
   private candleUpdateSubscription!: Subscription;
   private priceUpdateSubscription!: Subscription;
-  private lastCandleTimeMap: Map<string, Time> = new Map();
+  private lastCandleTimeMap: Map<string, number> = new Map(); // Changed to number
 
   public selectedTimeframe: string = '1m'; // Default timeframe
   public availableTimeframes: string[] = ['1m', '5m', '15m', '30m', '60m'];
@@ -60,6 +60,9 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
         });
         console.log(`TradingChartComponent - Added completed candle for ${timeframe} at ${candle.time}`);
       }
+
+      // Reset the current candle after the candle is completed
+      this.currentCandle = null;
     });
 
     // Subscribe to PriceUpdates to update the current candle in real-time
@@ -89,15 +92,16 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
 
       if (!this.currentCandle) {
         // Create the initial current candle immediately
+        const candleTime = Math.floor(new Date(update.timestamp).getTime() / 1000); // Convert to Unix timestamp in seconds
         this.currentCandle = {
-          time: Math.floor(new Date(update.timestamp).getTime() / 1000) as Time,
+          time: candleTime as Time,
           open: price,
           high: price,
           low: price,
           close: price
         };
         series?.update(this.currentCandle);
-        this.lastCandleTimeMap.set(timeframe, this.currentCandle.time);
+        this.lastCandleTimeMap.set(timeframe, candleTime);
         console.log(`TradingChartComponent - Created initial candle for ${timeframe} at ${this.currentCandle.time}`);
       } else {
         // Update the current candle's high, low, and close
@@ -105,8 +109,9 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
         if (price < this.currentCandle.low) this.currentCandle.low = price;
         this.currentCandle.close = price;
 
+        // Update the chart with the current candle
         series?.update({
-          time: this.currentCandle.time,
+          time: this.currentCandle.time as Time,
           open: this.currentCandle.open,
           high: this.currentCandle.high,
           low: this.currentCandle.low,
@@ -176,13 +181,10 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
 
-    // Reset the current candle if changing timeframe
-    const previousTimeframe = Array.from(this.candleSeriesMap.keys()).find(tf => tf !== newTimeframe);
-    if (previousTimeframe) {
-      this.currentCandle = null;
-      this.lastCandleTimeMap.set(newTimeframe, undefined as unknown as Time);
-      console.log(`TradingChartComponent - Reset current candle for timeframe: ${newTimeframe}`);
-    }
+    // Reset the current candle for the new timeframe
+    this.currentCandle = null;
+    this.lastCandleTimeMap.set(newTimeframe, undefined as unknown as number);
+    console.log(`TradingChartComponent - Reset current candle for timeframe: ${newTimeframe}`);
   }
 
   public formatTimeframe(timeframe: string): string {
