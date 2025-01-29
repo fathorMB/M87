@@ -33,19 +33,19 @@ export class SignalRService {
       .withUrl(environment.signalRUrl)
       .configureLogging(LogLevel.Information)
       .build();
-  
+
     this.hubConnection.start()
       .then(() => {
         console.log('Connessione SignalR avviata');
         // Opzionale: Invia un messaggio al backend per confermare la connessione
       })
       .catch(err => console.error('Errore di connessione SignalR: ', err));
-  
+
     this.hubConnection.on('ReceivePriceUpdate', (stockSymbol: string, price: number, timestamp: string) => {
       console.log(`Ricevuto PriceUpdate: ${stockSymbol} - ${price} - ${timestamp}`);
       this.priceUpdates$.next({ stockSymbol, price, timestamp });
     });
-  
+
     this.hubConnection.on('ReceiveCandleUpdate', (stockSymbol: string, timeframe: string, candle: Candle) => {
       console.log(`Ricevuto CandleUpdate: ${stockSymbol} - ${timeframe} - ${candle.time}`);
       this.candleUpdates$.next({ stockSymbol, timeframe, candle });

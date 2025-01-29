@@ -1,4 +1,6 @@
-﻿using M87.Contracts;
+﻿// File: M87/M87.WebAPI/SimulationEventHandler.cs
+
+using M87.Contracts;
 using M87.WebAPI.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
@@ -23,6 +25,13 @@ public class SimulationEventHandler : ISimulationEventHandler
     public async Task OnCandleUpdateAsync(CandleUpdate candleUpdate)
     {
         _logger.LogInformation($"Invio aggiornamento candela: {candleUpdate.StockSymbol} - {candleUpdate.Timeframe} - {candleUpdate.Candle.Time}");
-        await _hubContext.Clients.All.SendAsync("ReceiveCandleUpdate", candleUpdate.StockSymbol, candleUpdate.Timeframe, candleUpdate.Candle);
+        await _hubContext.Clients.All.SendAsync("ReceiveCandleUpdate", candleUpdate.StockSymbol, candleUpdate.Timeframe, new
+        {
+            candleUpdate.Candle.Time,
+            candleUpdate.Candle.Open,
+            candleUpdate.Candle.High,
+            candleUpdate.Candle.Low,
+            candleUpdate.Candle.Close
+        });
     }
 }

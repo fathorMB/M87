@@ -20,7 +20,6 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private chart!: IChartApi;
   private candleSeriesMap: Map<string, ISeriesApi<'Candlestick'>> = new Map();
-  private dataMap: Map<string, Candle[]> = new Map();
   private candleUpdateSubscription!: Subscription;
 
   public selectedTimeframe: string = '1m'; // Timeframe predefinito
@@ -40,9 +39,8 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
       const timeframe = update.timeframe;
       const candle = update.candle;
 
-      if (!this.dataMap.has(timeframe)) {
-        this.dataMap.set(timeframe, []);
-        // Inizializza la serie di candele per il timeframe
+      // Verifica se la serie per il timeframe esiste, altrimenti crea una nuova serie
+      if (!this.candleSeriesMap.has(timeframe)) {
         const series = this.chart.addCandlestickSeries({
           upColor: '#4CAF50',
           downColor: '#F44336',
@@ -56,10 +54,9 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const series = this.candleSeriesMap.get(timeframe);
-      const data = this.dataMap.get(timeframe)!;
 
-      // Aggiungi o aggiorna la candela
-      data.push({
+      // Aggiungi la nuova candela al grafico
+      series?.update({
         time: candle.time as Time, // Cast esplicito a Time
         open: candle.open,
         high: candle.high,
@@ -67,17 +64,10 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
         close: candle.close
       });
 
-      console.log(`TradingChartComponent - Aggiornamento Serie (${timeframe}):`, data);
-
-      series?.setData(data);
+      console.log(`TradingChartComponent - Candela aggiornata per timeframe ${timeframe}:`, candle);
 
       // Opzionale: rimuovi dati vecchi per limitare il numero di candele
-      if (data.length > 1000) { // Esempio di limite
-        data.shift();
-        series?.setData(data);
-      }
-
-      console.log(`TradingChartComponent - setData chiamato per timeframe ${timeframe}`);
+      // Implementa se necessario
     });
   }
 
@@ -102,18 +92,8 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
     console.log('TradingChartComponent - Grafico inizializzato:', this.chart);
 
     // Inizializza la serie di candele per il timeframe predefinito
-    const defaultSeries = this.chart.addCandlestickSeries({
-      upColor: '#4CAF50',
-      downColor: '#F44336',
-      borderDownColor: '#F44336',
-      borderUpColor: '#4CAF50',
-      wickDownColor: '#F44336',
-      wickUpColor: '#4CAF50',
-    });
-    this.candleSeriesMap.set(this.selectedTimeframe, defaultSeries);
-    this.dataMap.set(this.selectedTimeframe, []);
-
-    console.log(`TradingChartComponent - Serie predefinita aggiunta per timeframe: ${this.selectedTimeframe}`, defaultSeries);
+    // Ora viene gestita dinamicamente al primo aggiornamento
+    // Non è più necessario creare una serie qui
 
     // Assicurati che il grafico si ridimensiona con la finestra
     window.addEventListener('resize', this.resizeChart.bind(this));
@@ -152,17 +132,8 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
       console.log(`TradingChartComponent - Serie mostrata: ${newTimeframe}`);
     } else {
       // Se la serie non esiste ancora, verrà creata quando arriverà il primo CandleUpdate
-      const newSeries = this.chart.addCandlestickSeries({
-        upColor: '#4CAF50',
-        downColor: '#F44336',
-        borderDownColor: '#F44336',
-        borderUpColor: '#4CAF50',
-        wickDownColor: '#F44336',
-        wickUpColor: '#4CAF50',
-      });
-      this.candleSeriesMap.set(newTimeframe, newSeries);
-      this.dataMap.set(newTimeframe, []);
-      console.log(`TradingChartComponent - Nuova serie creata per timeframe: ${newTimeframe}`, newSeries);
+      console.log(`TradingChartComponent - Serie non esiste ancora per timeframe: ${newTimeframe}`);
+      // La serie verrà creata al primo aggiornamento
     }
   }
 
@@ -187,6 +158,6 @@ export class TradingChartComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Metodo di debug per loggare i dati
   public logData(): void {
-    console.log('TradingChartComponent - DataMap:', this.dataMap);
+    console.log('TradingChartComponent - Attualmente non supportato il log dei dati cumulativi.');
   }
 }
